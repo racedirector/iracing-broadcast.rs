@@ -6,7 +6,6 @@ use crate::{
 
 #[cfg(windows)]
 use {
-    std::convert::TryInto,
     windows::Win32::{
         Foundation::{LPARAM, WPARAM},
         UI::WindowsAndMessaging::{HWND_BROADCAST, RegisterWindowMessageW, SendNotifyMessageW},
@@ -31,8 +30,11 @@ pub trait BroadcastMessageProvider {
     fn to_message(self) -> (BroadcastMessageType, u16, u16, u16);
 }
 
-///
 /// Messages that can be sent to the iRacing simulation.
+///
+/// Each variant maps to the documented window message contract in the iRacing
+/// SDK. Primitive parameters are passed through as-is and packed into the
+/// `WPARAM`/`LPARAM` pairs expected by the simulator.
 ///
 /// # Examples
 ///
@@ -43,21 +45,37 @@ pub trait BroadcastMessageProvider {
 /// let _ = BroadcastMessage::CameraSwitchNumber("001", 0, 0);
 /// ```
 pub enum BroadcastMessage {
+    /// Switch to a specific camera group and camera index for a position.
     CameraSwitchPosition(u8, u8, u8),
+    /// Switch to a specific camera group and camera index for a car number.
     CameraSwitchNumber(&'static str, u8, u8),
+    /// Apply a new [`CameraState`] bitfield.
     CameraSetState(CameraState),
+    /// Set the replay play speed, with an optional slow-motion toggle.
     ReplaySetPlaySpeed(u8, bool),
+    /// Jump to a replay position, with the frame number encoded in `var2`.
     ReplaySetPlayPosition(ReplayPositionMode, u16),
+    /// Perform a replay search according to the provided mode.
     ReplaySearch(ReplaySearchMode),
+    /// Toggle the replay state on or off.
     ReplaySetState,
+    /// Reload all textures.
     ReloadAllTextures,
+    /// Reload textures for a specific car index.
     ReloadTextures(u8),
+    /// Send a chat command.
     ChatCommand(ChatCommandMode),
+    /// Send a chat macro by number.
     ChatCommandMacro(u8),
+    /// Issue a pit command.
     PitCommand(PitCommandMode),
+    /// Control telemetry recording.
     TelemetryCommand(TelemetryCommandMode),
+    /// Send a force-feedback command.
     FFBCommand(u16),
+    /// Search a replay to a specific session time.
     ReplaySearchSessionTime(u8, u16),
+    /// Control video capture.
     VideoCapture(VideoCaptureMode),
 }
 
@@ -78,7 +96,7 @@ impl BroadcastMessageProvider for BroadcastMessage {
             ),
             BroadcastMessage::CameraSetState(camera_state) => (
                 BroadcastMessageType::CameraSetState,
-                camera_state.bits().try_into().unwrap(),
+                camera_state.bits() as u16,
                 0,
                 0,
             ),
@@ -139,12 +157,18 @@ impl BroadcastMessageProvider for BroadcastMessage {
 
 #[cfg(windows)]
 #[derive(Debug, Copy, Clone)]
+/// Handle for sending broadcast messages to a running iRacing simulator.
+///
+/// The client registers the well-known broadcast window message and can then
+/// dispatch typed messages via [`send_message`]. All methods are Windows-only
+/// because the simulator relies on the Win32 messaging subsystem.
 pub struct Client {
     message_id: u32,
 }
 
 #[cfg(windows)]
 impl Client {
+    /// Register the broadcast window message and create a sender handle.
     pub fn new() -> Result<Self> {
         let message: Vec<u16> = wide_string(BROADCAST_MESSAGE_NAME);
 
@@ -160,6 +184,7 @@ impl Client {
         Ok(Client { message_id: id })
     }
 
+    /// Send a broadcast message to the iRacing simulator.
     pub fn send_message<M: BroadcastMessageProvider>(&self, message: M) -> Result<()> {
         let (broadcast_type, var1, var2, var3) = message.to_message();
         // Pack the low/high words to match the Windows broadcast contract.
@@ -167,6 +192,10 @@ impl Client {
         let lparam_value = var2 as isize | ((var3 as isize) << 16);
 
         unsafe {
+            // Safety: iRacing expects these messages to be delivered to
+            // HWND_BROADCAST using the ID obtained from RegisterWindowMessageW.
+            // All parameter packing matches the documented protocol, so the
+            // Win32 API receives well-formed data.
             SendNotifyMessageW(
                 HWND_BROADCAST,
                 self.message_id,
