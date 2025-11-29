@@ -1,9 +1,9 @@
 [package]
-name = "iracing_broadcast"
+name = "iracing-broadcast"
 version = "0.1.0"
 description = "Rust interface for iRacing Broadcast Message API."
 authors = ["Justin Makaila <justin@treehousetechnology.io>"]
-repository = "https://github.com/racedirector/iracing_broadcast"
+repository = "https://github.com/racedirector/iracing-broadcast.rs"
 edition = "2024"
 license = "MIT"
 build = false
@@ -23,9 +23,6 @@ keywords = [
 [dependencies]
 bitflags = "1.2"
 thiserror = "2"
-
-# Optional TypeScript generation support
-specta = { version = "2.0.0-rc.22", features = ["derive"], optional = true }
 
 # Windows-specific dependencies (for sending messages to iRacing)
 [target.'cfg(windows)'.dependencies]
