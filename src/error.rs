@@ -123,5 +123,3 @@ impl From<core::Error> for BroadcastError {
         }
     }
 }
-
-// TODO: Tests
