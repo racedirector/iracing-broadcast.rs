@@ -24,10 +24,13 @@
 //! let conn_error = BroadcastError::connection_failed("iRacing not detected");
 //!
 //! // Unsupported platform
-//! let unsupported_error = BroadcastError::unsupported_platform("Message registration", "Windows")
+//! let unsupported_error = BroadcastError::unsupported_platform("Message registration", "Windows");
 //! ```
 
 use thiserror::Error;
+
+#[cfg(windows)]
+use windows_core as core;
 
 pub type Result<T, E = BroadcastError> = std::result::Result<T, E>;
 
@@ -85,9 +88,8 @@ impl BroadcastError {
 
     /// Helper constructor for connection errors.
     pub fn connection_failed(reason: impl Into<String>) -> Self {
-        TelemetryError::Connection {
+        BroadcastError::Connection {
             reason: reason.into(),
-            source: None,
         }
     }
 
@@ -113,9 +115,9 @@ impl BroadcastError {
 }
 
 #[cfg(windows)]
-impl From<core::Error> for TelemetryError {
+impl From<core::Error> for BroadcastError {
     fn from(err: core::Error) -> Self {
-        TelemetryError::WindowsApi {
+        BroadcastError::WindowsApi {
             operation: "Unknown Windows operation".to_string(),
             source: err,
         }

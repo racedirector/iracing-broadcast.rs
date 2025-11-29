@@ -1,5 +1,6 @@
 use bitflags::bitflags;
 
+#[repr(u32)]
 pub enum BroadcastMessageType {
     CameraSwitchPosition = 0,
     CameraSwitchNumber,
@@ -17,6 +18,12 @@ pub enum BroadcastMessageType {
     VideoCapture,
 }
 
+impl From<BroadcastMessageType> for usize {
+    fn from(value: BroadcastMessageType) -> Self {
+        value as u32 as usize
+    }
+}
+
 bitflags! {
     ///
     /// Bitfield of current camera state
@@ -24,7 +31,7 @@ bitflags! {
     /// # Examples
     ///
     /// ```
-    /// use iracing::states::CameraState;
+    /// use iracing_broadcast::CameraState;
     ///
     /// let very_scenic = CameraState::UI_HIDDEN | CameraState::IS_SCENIC_ACTIVE;
     /// ```

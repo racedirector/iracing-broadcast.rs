@@ -1,17 +1,13 @@
 use std::convert::TryInto;
-// use std::io::{self, Result as IOResult};
-use std::num::NonZeroU32;
 use windows::Win32::Foundation::{LPARAM, WPARAM};
 use windows::Win32::UI::WindowsAndMessaging::{
     HWND_BROADCAST, RegisterWindowMessageW, SendNotifyMessageW,
 };
+use windows::core::PCWSTR;
 
 use crate::{
-    BroadcastError, Result,
-    message::{
-        BroadcastMessageType, CameraState, ChatCommandMode, PitCommandMode, ReplayPositionMode,
-        ReplaySearchMode, TelemetryCommandMode, VideoCaptureMode,
-    },
+    BroadcastError, BroadcastMessageType, CameraState, ChatCommandMode, PitCommandMode,
+    ReplayPositionMode, ReplaySearchMode, Result, TelemetryCommandMode, VideoCaptureMode,
     util::pad_car_number,
 };
 
@@ -36,7 +32,7 @@ pub trait BroadcastMessageProvider {
 /// # Examples
 ///
 /// ```
-/// use iracing::broadcast::BroadcastMessage;
+/// use iracing_broadcast::BroadcastMessage;
 ///
 /// let _ = BroadcastMessage::CameraSwitchPosition(0, 0, 0);
 /// let _ = BroadcastMessage::CameraSwitchNumber("001", 0, 0);
@@ -139,25 +135,41 @@ impl BroadcastMessageProvider for BroadcastMessage {
 #[cfg(windows)]
 #[derive(Debug, Copy, Clone)]
 pub struct Client {
-    message_id: NonZeroU32,
+    message_id: u32,
 }
 
 #[cfg(windows)]
 impl Client {
-    pub fn new() -> IOResult<Self> {
+    pub fn new() -> Result<Self> {
         let message: Vec<u16> = wide_string(BROADCAST_MESSAGE_NAME);
 
-        let id = unsafe { RegisterWindowMessageW(message.as_ptr()) };
-        let message_id = NonZeroU32::new(id).ok_or_else(io::Error::last_os_error)?;
-        Ok(Client { message_id })
+        let id = unsafe { RegisterWindowMessageW(PCWSTR::from_raw(message.as_ptr())) };
+
+        if id == 0 {
+            return Err(BroadcastError::connection_failed(format!(
+                "Failed to register broadcast window message '{}'",
+                BROADCAST_MESSAGE_NAME
+            )));
+        }
+
+        Ok(Client { message_id: id })
     }
 
-    pub fn send_message<M: BroadcastMessageProvider>(&self, message: M) {
+    pub fn send_message<M: BroadcastMessageProvider>(&self, message: M) -> Result<()> {
         let (broadcast_type, var1, var2, var3) = message.to_message();
         // Pack the low/high words to match the Windows broadcast contract.
-        let wparam: WPARAM = (broadcast_type as WPARAM) | ((var1 as WPARAM) << 16);
-        let lparam: LPARAM = (var2 as LPARAM) | ((var3 as LPARAM) << 16);
-        unsafe { SendNotifyMessageW(HWND_BROADCAST, self.message_id.into(), wparam, lparam) };
+        let wparam_value = broadcast_type as usize | ((var1 as usize) << 16);
+        let lparam_value = var2 as isize | ((var3 as isize) << 16);
+
+        unsafe {
+            SendNotifyMessageW(
+                HWND_BROADCAST,
+                self.message_id,
+                WPARAM(wparam_value),
+                LPARAM(lparam_value),
+            )
+            .map_err(|e| BroadcastError::windows_api_error("SendNotifyMessageW", e))
+        }
     }
 }
 
@@ -172,7 +184,7 @@ impl Client {
     /// Attempt to create a broadcast-message connection on non-Windows platforms.
     ///
     /// This always returns an error as message events can only be sent on windows.
-    pub fn new() -> IOResult<Self> {
+    pub fn new() -> Result<Self> {
         Err(crate::BroadcastError::unsupported_platform(
             "Broadcast Client",
             "Windows",
@@ -183,7 +195,7 @@ impl Client {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::message::PitCommandMode;
+    use crate::PitCommandMode;
 
     #[test]
     fn test_broadcast() {
@@ -194,6 +206,6 @@ mod tests {
     #[test]
     fn test_message() {
         let broadcast = Client::new().expect("Could not register broadcast client");
-        broadcast.send_message(BroadcastMessage::PitCommand(PitCommandMode::Tearoff));
+        let _ = broadcast.send_message(BroadcastMessage::PitCommand(PitCommandMode::Tearoff));
     }
 }

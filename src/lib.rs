@@ -1,6 +1,11 @@
+mod client;
 mod error;
+mod message;
 mod util;
 
+pub use client::{BroadcastMessage, Client};
 pub use error::*;
-pub mod client;
-pub mod message;
+pub use message::{
+    BroadcastMessageType, CameraState, ChatCommandMode, PitCommandMode, ReplayPositionMode,
+    ReplaySearchMode, TelemetryCommandMode, VideoCaptureMode,
+};

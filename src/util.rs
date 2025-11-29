@@ -1,3 +1,7 @@
+/// Encodes a car number string into a sortable `u16`, keeping leading zeros
+/// distinct by folding them into the thousands place (`1` -> `1`, `01` -> `2001`,
+/// `001` -> `3001`). All-zero strings treat one zero as the number itself so we
+/// only count the extra zeros.
 pub fn pad_car_number(s: &str) -> u16 {
     let bytes = s.as_bytes();
     let len = bytes.len();

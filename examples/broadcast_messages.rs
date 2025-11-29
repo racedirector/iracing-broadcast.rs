@@ -1,3 +1,8 @@
+use iracing_broadcast::{
+    BroadcastMessage, CameraState, ChatCommandMode, Client, PitCommandMode, ReplayPositionMode,
+    ReplaySearchMode, TelemetryCommandMode, VideoCaptureMode,
+};
+
 pub fn main() {
     let broadcast = Client::new().expect("Could not create broadcast client");
 
@@ -10,26 +15,26 @@ pub fn main() {
 }
 
 fn demo_camera_messages(broadcast: &Client) {
-    broadcast.send_message(BroadcastMessage::CameraSwitchPosition(0, 0, 0));
-    broadcast.send_message(BroadcastMessage::CameraSwitchNumber("064", 1, 1));
+    let _ = broadcast.send_message(BroadcastMessage::CameraSwitchPosition(0, 0, 0));
+    let _ = broadcast.send_message(BroadcastMessage::CameraSwitchNumber("064", 1, 1));
     let scenic_camera = CameraState::IS_SCENIC_ACTIVE | CameraState::UI_HIDDEN;
-    broadcast.send_message(BroadcastMessage::CameraSetState(scenic_camera));
+    let _ = broadcast.send_message(BroadcastMessage::CameraSetState(scenic_camera));
 }
 
 fn demo_replay_messages(broadcast: &Client) {
-    broadcast.send_message(BroadcastMessage::ReplaySetPlaySpeed(1, false));
-    broadcast.send_message(BroadcastMessage::ReplaySetPlaySpeed(4, true));
-    broadcast.send_message(BroadcastMessage::ReplaySetPlayPosition(
+    let _ = broadcast.send_message(BroadcastMessage::ReplaySetPlaySpeed(1, false));
+    let _ = broadcast.send_message(BroadcastMessage::ReplaySetPlaySpeed(4, true));
+    let _ = broadcast.send_message(BroadcastMessage::ReplaySetPlayPosition(
         ReplayPositionMode::Begin,
         0,
     ));
-    broadcast.send_message(BroadcastMessage::ReplaySearch(
+    let _ = broadcast.send_message(BroadcastMessage::ReplaySearch(
         ReplaySearchMode::NextIncident,
     ));
-    broadcast.send_message(BroadcastMessage::ReplaySetState);
-    broadcast.send_message(BroadcastMessage::ReplaySearchSessionTime(0, 15_000));
-    broadcast.send_message(BroadcastMessage::ReloadAllTextures);
-    broadcast.send_message(BroadcastMessage::ReloadTextures(12));
+    let _ = broadcast.send_message(BroadcastMessage::ReplaySetState);
+    let _ = broadcast.send_message(BroadcastMessage::ReplaySearchSessionTime(0, 15_000));
+    let _ = broadcast.send_message(BroadcastMessage::ReloadAllTextures);
+    let _ = broadcast.send_message(BroadcastMessage::ReloadTextures(12));
 }
 
 fn demo_chat_messages(broadcast: &Client) {
@@ -39,9 +44,9 @@ fn demo_chat_messages(broadcast: &Client) {
         ChatCommandMode::Reply,
         ChatCommandMode::Cancel,
     ] {
-        broadcast.send_message(BroadcastMessage::ChatCommand(mode));
+        let _ = broadcast.send_message(BroadcastMessage::ChatCommand(mode));
     }
-    broadcast.send_message(BroadcastMessage::ChatCommandMacro(3));
+    let _ = broadcast.send_message(BroadcastMessage::ChatCommandMacro(3));
 }
 
 fn demo_pit_messages(broadcast: &Client) {
@@ -61,19 +66,23 @@ fn demo_pit_messages(broadcast: &Client) {
     ];
 
     for mode in pit_modes {
-        broadcast.send_message(BroadcastMessage::PitCommand(mode));
+        let _ = broadcast.send_message(BroadcastMessage::PitCommand(mode));
     }
 }
 
 fn demo_telemetry_and_ffb(broadcast: &Client) {
-    broadcast.send_message(BroadcastMessage::TelemetryCommand(
+    let _ = broadcast.send_message(BroadcastMessage::TelemetryCommand(
         TelemetryCommandMode::Restart,
     ));
-    broadcast.send_message(BroadcastMessage::FFBCommand(32_768));
+    let _ = broadcast.send_message(BroadcastMessage::FFBCommand(32_768));
 }
 
 fn demo_video_capture(broadcast: &Client) {
-    broadcast.send_message(BroadcastMessage::VideoCapture(
-        VideoCaptureMode::ToggleCapture,
+    // Start capture
+    let _ = broadcast.send_message(BroadcastMessage::VideoCapture(
+        VideoCaptureMode::StartCapture,
     ));
+
+    // Stop capture
+    let _ = broadcast.send_message(BroadcastMessage::VideoCapture(VideoCaptureMode::EndCapture));
 }
