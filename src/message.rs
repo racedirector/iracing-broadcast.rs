@@ -1,20 +1,35 @@
 use bitflags::bitflags;
 
+/// Identifiers for broadcast messages recognized by the iRacing simulator.
 #[repr(u32)]
 pub enum BroadcastMessageType {
+    /// Switch to a camera by position index.
     CameraSwitchPosition = 0,
+    /// Switch to a camera by car number.
     CameraSwitchNumber,
+    /// Update the camera state bitfield.
     CameraSetState,
+    /// Change replay playback speed.
     ReplaySetPlaySpeed,
+    /// Move to a specific replay position.
     ReplaySetPlayPosition,
+    /// Perform a replay search.
     ReplaySearch,
+    /// Toggle the replay state.
     ReplaySetState,
+    /// Reload one or more textures.
     ReloadTextures,
+    /// Issue a chat command.
     ChatCommand,
+    /// Issue a pit command.
     PitCommand,
+    /// Control telemetry capture.
     TelemetryCommand,
+    /// Send a force-feedback command.
     FFBCommand,
+    /// Search to a session-relative time.
     ReplaySearchSessionTime,
+    /// Control screenshot or capture recording.
     VideoCapture,
 }
 
@@ -50,13 +65,14 @@ bitflags! {
     }
 }
 
-///
-/// Replay Position Mode
-///
+/// Replay positioning behaviors when jumping within a session recording.
 #[repr(u16)]
 pub enum ReplayPositionMode {
+    /// Seek to the start of the session.
     Begin = 0,
+    /// Seek relative to the current frame.
     Current,
+    /// Seek to the end of the session.
     End,
 }
 
@@ -66,20 +82,28 @@ impl From<ReplayPositionMode> for u16 {
     }
 }
 
-///
-/// Replay Search Mode
-///
+/// High-level search controls for walking replay timelines.
 #[repr(u16)]
 pub enum ReplaySearchMode {
+    /// Jump to the beginning of the session.
     ToStart = 0,
+    /// Jump to the end of the session.
     ToEnd,
+    /// Jump to the start of the previous session block.
     PreviousSession,
+    /// Jump to the start of the next session block.
     NextSession,
+    /// Jump back one lap.
     PreviousLap,
+    /// Jump forward one lap.
     NextLap,
+    /// Step one frame backward.
     PreviousFrame,
+    /// Step one frame forward.
     NextFrame,
+    /// Jump to the previous recorded incident.
     PreviousIncident,
+    /// Jump to the next recorded incident.
     NextIncident,
 }
 
@@ -89,13 +113,14 @@ impl From<ReplaySearchMode> for u16 {
     }
 }
 
-///
-/// Telemetry Command Mode
-///
+/// Control commands for telemetry recording.
 #[repr(u16)]
 pub enum TelemetryCommandMode {
+    /// Stop capturing telemetry data.
     Stop = 0,
+    /// Begin capturing telemetry data.
     Start,
+    /// Restart telemetry capture from scratch.
     Restart,
 }
 
@@ -105,14 +130,16 @@ impl From<TelemetryCommandMode> for u16 {
     }
 }
 
-///
-/// Chat Command Mode
-///
+/// Chat command options exposed by the broadcast protocol.
 #[repr(u16)]
 pub enum ChatCommandMode {
+    /// Send a numbered chat macro.
     Macro = 0,
+    /// Begin a chat session.
     Begin,
+    /// Reply to an existing message.
     Reply,
+    /// Cancel chat entry.
     Cancel,
 }
 
@@ -122,21 +149,31 @@ impl From<ChatCommandMode> for u16 {
     }
 }
 
-///
-/// Pit Command Mode
-///
+/// Commands that adjust pit service behavior for the player's car.
 pub enum PitCommandMode {
+    /// Clear all pending pit service requests.
     Clear,
+    /// Request a tearoff.
     Tearoff,
+    /// Set fuel amount in gallons.
     Fuel(u8),
+    /// Set left-front tire pressure in PSI.
     LF(u8),
+    /// Set right-front tire pressure in PSI.
     RF(u8),
+    /// Set left-rear tire pressure in PSI.
     LR(u8),
+    /// Set right-rear tire pressure in PSI.
     RR(u8),
+    /// Clear all tire change requests.
     ClearTires,
+    /// Request a fast repair.
     FastRepair,
+    /// Cancel tearoff request.
     ClearTearoff,
+    /// Cancel fast repair request.
     ClearFastRepair,
+    /// Cancel fuel request.
     ClearFuel,
 }
 
@@ -160,16 +197,20 @@ impl PitCommandMode {
     }
 }
 
-///
-/// Video Capture Mode
-///
+/// Control video capture and screenshot functionality.
 #[repr(u16)]
 pub enum VideoCaptureMode {
+    /// Trigger a single screenshot.
     ScreenShot = 0,
+    /// Begin capturing video.
     StartCapture,
+    /// End capturing video.
     EndCapture,
+    /// Toggle recording state.
     ToggleCapture,
+    /// Show the capture timer UI.
     ShowTimer,
+    /// Hide the capture timer UI.
     HideTimer,
 }
 
