@@ -21,8 +21,9 @@ pub fn pad_car_number(s: &str) -> u16 {
         zeros -= 1;
     }
 
-    // Parse the numeric value (leading zeros are fine)
-    let num: u16 = s.parse().unwrap();
+    // Parse the numeric value (leading zeros are fine). Fall back to zero for
+    // any malformed car numbers so we avoid panicking the caller.
+    let num: u16 = s.parse().unwrap_or(0);
 
     if zeros > 0 {
         let num_place = if num > 99 {
