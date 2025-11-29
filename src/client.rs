@@ -1,18 +1,23 @@
-use std::convert::TryInto;
-use windows::Win32::Foundation::{LPARAM, WPARAM};
-use windows::Win32::UI::WindowsAndMessaging::{
-    HWND_BROADCAST, RegisterWindowMessageW, SendNotifyMessageW,
-};
-use windows::core::PCWSTR;
-
 use crate::{
     BroadcastError, BroadcastMessageType, CameraState, ChatCommandMode, PitCommandMode,
     ReplayPositionMode, ReplaySearchMode, Result, TelemetryCommandMode, VideoCaptureMode,
     util::pad_car_number,
 };
 
+#[cfg(windows)]
+use {
+    std::convert::TryInto,
+    windows::Win32::{
+        Foundation::{LPARAM, WPARAM},
+        UI::WindowsAndMessaging::{HWND_BROADCAST, RegisterWindowMessageW, SendNotifyMessageW},
+    },
+    windows::core::PCWSTR,
+};
+
+#[cfg(windows)]
 const BROADCAST_MESSAGE_NAME: &str = r"IRSDK_BROADCASTMSG";
 
+#[cfg(windows)]
 fn wide_string(s: &str) -> Vec<u16> {
     use std::ffi::OsStr;
     use std::os::windows::ffi::OsStrExt;
@@ -185,8 +190,15 @@ impl Client {
     ///
     /// This always returns an error as message events can only be sent on windows.
     pub fn new() -> Result<Self> {
-        Err(crate::BroadcastError::unsupported_platform(
+        Err(BroadcastError::unsupported_platform(
             "Broadcast Client",
+            "Windows",
+        ))
+    }
+
+    pub fn send_message<M: BroadcastMessageProvider>(&self, _message: M) -> Result<()> {
+        Err(BroadcastError::unsupported_platform(
+            "Broadcast Client Send Message",
             "Windows",
         ))
     }
@@ -195,14 +207,22 @@ impl Client {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::PitCommandMode;
 
+    #[cfg(windows)]
     #[test]
     fn test_broadcast() {
         let broadcast = Client::new();
         assert!(broadcast.is_ok());
     }
 
+    #[cfg(not(windows))]
+    #[test]
+    fn test_unsupported_platform() {
+        let broadcast = Client::new();
+        assert!(broadcast.is_err());
+    }
+
+    #[cfg(windows)]
     #[test]
     fn test_message() {
         let broadcast = Client::new().expect("Could not register broadcast client");
