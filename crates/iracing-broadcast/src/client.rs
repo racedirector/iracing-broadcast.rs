@@ -164,8 +164,7 @@ impl Client {
 
         if id == 0 {
             return Err(BroadcastError::connection_failed(format!(
-                "Failed to register broadcast window message '{}'",
-                BROADCAST_MESSAGE_NAME
+                "Failed to register broadcast window message '{BROADCAST_MESSAGE_NAME}'"
             )));
         }
 
@@ -177,7 +176,7 @@ impl Client {
         let (broadcast_type, var1, var2, var3) = message.to_message();
         // Pack the low/high words to match the Windows broadcast contract.
         let wparam_value = broadcast_type as usize | ((var1 as usize) << 16);
-        let lparam_value = var2 as isize | ((var3 as isize) << 16);
+        let lparam_value = i32::from(var2) | (i32::from(var3) << 16);
 
         unsafe {
             // Safety: iRacing expects these messages to be delivered to
@@ -188,7 +187,7 @@ impl Client {
                 HWND_BROADCAST,
                 self.message_id,
                 WPARAM(wparam_value),
-                LPARAM(lparam_value),
+                LPARAM(lparam_value as isize),
             )
             .map_err(|e| BroadcastError::windows_api_error("SendNotifyMessageW", e))
         }

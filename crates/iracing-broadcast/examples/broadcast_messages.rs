@@ -1,3 +1,5 @@
+#![allow(clippy::trivially_copy_pass_by_ref)]
+
 use iracing_broadcast::{
     BroadcastMessage, CameraState, ChatCommandMode, Client, PitCommandMode, ReplayPositionMode,
     ReplaySearchMode, TelemetryCommandMode, VideoCaptureMode,
