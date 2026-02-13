@@ -24,13 +24,9 @@ fn demo_camera_messages(broadcast: &Client) {
 fn demo_replay_messages(broadcast: &Client) {
     let _ = broadcast.send_message(BroadcastMessage::ReplaySetPlaySpeed(1, false));
     let _ = broadcast.send_message(BroadcastMessage::ReplaySetPlaySpeed(4, true));
-    let _ = broadcast.send_message(BroadcastMessage::ReplaySetPlayPosition(
-        ReplayPositionMode::Begin,
-        0,
-    ));
-    let _ = broadcast.send_message(BroadcastMessage::ReplaySearch(
-        ReplaySearchMode::NextIncident,
-    ));
+    let _ = broadcast
+        .send_message(BroadcastMessage::ReplaySetPlayPosition(ReplayPositionMode::Begin, 0));
+    let _ = broadcast.send_message(BroadcastMessage::ReplaySearch(ReplaySearchMode::NextIncident));
     let _ = broadcast.send_message(BroadcastMessage::ReplaySetState);
     let _ = broadcast.send_message(BroadcastMessage::ReplaySearchSessionTime(0, 15_000));
     let _ = broadcast.send_message(BroadcastMessage::ReloadAllTextures);
@@ -71,17 +67,14 @@ fn demo_pit_messages(broadcast: &Client) {
 }
 
 fn demo_telemetry_and_ffb(broadcast: &Client) {
-    let _ = broadcast.send_message(BroadcastMessage::TelemetryCommand(
-        TelemetryCommandMode::Restart,
-    ));
+    let _ =
+        broadcast.send_message(BroadcastMessage::TelemetryCommand(TelemetryCommandMode::Restart));
     let _ = broadcast.send_message(BroadcastMessage::FFBCommand(32_768));
 }
 
 fn demo_video_capture(broadcast: &Client) {
     // Start capture
-    let _ = broadcast.send_message(BroadcastMessage::VideoCapture(
-        VideoCaptureMode::StartCapture,
-    ));
+    let _ = broadcast.send_message(BroadcastMessage::VideoCapture(VideoCaptureMode::StartCapture));
 
     // Stop capture
     let _ = broadcast.send_message(BroadcastMessage::VideoCapture(VideoCaptureMode::EndCapture));
