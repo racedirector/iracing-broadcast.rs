@@ -1,0 +1,29 @@
+[package]
+name = "iracing-broadcast"
+version = "0.1.0"
+description = "Rust interface for iRacing Broadcast Message API."
+authors.workspace = true
+repository.workspace = true
+edition.workspace = true
+license.workspace = true
+build = false
+include = [
+  "src/**",
+  "README.md",
+  "LICENSE"
+]
+readme = "README.md"
+keywords = [
+    "iracing",
+    "broadcast",
+    "racing",
+    "simulation",
+]
+
+[dependencies]
+bitflags.workspace = true
+thiserror.workspace = true
+
+[target.'cfg(windows)'.dependencies]
+windows.workspace = true
+windows-core.workspace = true

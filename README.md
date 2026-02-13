@@ -1,23 +1,13 @@
-# iracing-broadcast
+# iracing-broadcast.rs workspace
 
-A lightweight Rust crate for sending iRacing broadcast window messages. It
-encodes the simulator's documented broadcast protocol into typed enums so you
-can trigger camera switches, replay searches, telemetry capture, and more from
-your Rust application.
+This repository is now organized as a Cargo workspace with multiple crates:
 
-## Usage
+- `crates/iracing-broadcast`: core Rust crate for iRacing broadcast window messages.
+- `crates/iracing-broadcast-wasm`: scaffold for browser/WASM bindings over the core crate.
+- `crates/iracing-broadcast-node`: scaffold for Node.js bindings over the core crate.
 
-```rust,no_run
-use iracing_broadcast::{BroadcastMessage, Client, PitCommandMode};
+## Next steps
 
-fn main() -> Result<(), iracing_broadcast::BroadcastError> {
-    let client = Client::new()?;
+The phased implementation plan for WASM bindings is documented in:
 
-    // Request a tearoff from the pit crew.
-    client.send_message(BroadcastMessage::PitCommand(PitCommandMode::Tearoff))?;
-    Ok(())
-}
-```
-
-The broadcast client is only available when targeting Windows because the
-simulator communicates through Win32 window messages.
+- `docs/wasm-bindings-plan.md`
