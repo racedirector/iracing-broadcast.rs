@@ -15,13 +15,9 @@
 //! The API is intentionally minimal and mirrors the documented iRacing SDK
 //! constants. Consult the type-level documentation for details on each message
 //! and its parameters.
-
-#[cfg(not(windows))]
-compile_error!(
-    "iracing-broadcast currently only supports Windows targets because the iRacing \
-     broadcast API is delivered via Windows messages. Please build with a Windows \
-     target triple."
-);
+//!
+//! The `Client` transport is only functional on Windows. On non-Windows targets
+//! the protocol/message types remain available for modeling and serialization.
 
 mod client;
 mod error;

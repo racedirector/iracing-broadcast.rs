@@ -19,6 +19,20 @@ dependencies = [
 ]
 
 [[package]]
+name = "iracing-broadcast-node"
+version = "0.1.0"
+dependencies = [
+ "iracing-broadcast",
+]
+
+[[package]]
+name = "iracing-broadcast-wasm"
+version = "0.1.0"
+dependencies = [
+ "iracing-broadcast",
+]
+
+[[package]]
 name = "proc-macro2"
 version = "1.0.103"
 source = "registry+https://github.com/rust-lang/crates.io-index"

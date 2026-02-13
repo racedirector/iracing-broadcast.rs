@@ -1,31 +1,19 @@
-[package]
-name = "iracing-broadcast"
-version = "0.1.0"
-description = "Rust interface for iRacing Broadcast Message API."
+[workspace]
+members = [
+  "crates/iracing-broadcast",
+  "crates/iracing-broadcast-wasm",
+  "crates/iracing-broadcast-node",
+]
+resolver = "3"
+
+[workspace.package]
 authors = ["Justin Makaila <justin@treehousetechnology.io>"]
 repository = "https://github.com/racedirector/iracing-broadcast.rs"
-edition = "2024"
 license = "MIT"
-build = false
-include = [
-  "src/**",
-  "README.md",
-  "LICENSE"
-]
-readme = "README.md"
-keywords = [
-    "iracing",
-    "broadcast",
-    "racing",
-    "simulation",
-]
+edition = "2024"
 
-[dependencies]
+[workspace.dependencies]
 bitflags = "2.10"
 thiserror = "2"
-
-# Windows-specific dependencies (for sending messages to iRacing)
-[target.'cfg(windows)'.dependencies]
 windows = { version = "0.62.2", features = ["Win32_UI_WindowsAndMessaging"] }
 windows-core = "0.62.2"
-

@@ -1,0 +1,12 @@
+[package]
+name = "iracing-broadcast-node"
+version = "0.1.0"
+description = "Node.js bindings crate for iracing-broadcast."
+authors.workspace = true
+repository.workspace = true
+edition.workspace = true
+license.workspace = true
+publish = false
+
+[dependencies]
+iracing-broadcast = { path = "../iracing-broadcast" }
