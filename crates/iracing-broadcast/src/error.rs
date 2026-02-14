@@ -41,10 +41,7 @@ pub enum BroadcastError {
     Connection { reason: String },
 
     #[error("{feature} is only available on {required_platform}")]
-    UnsupportedPlatform {
-        feature: String,
-        required_platform: String,
-    },
+    UnsupportedPlatform { feature: String, required_platform: String },
 
     #[error("Windows API error: {operation}")]
     #[cfg(windows)]
@@ -56,6 +53,7 @@ pub enum BroadcastError {
 }
 
 impl BroadcastError {
+    #[must_use]
     pub fn is_retryable(&self) -> bool {
         match self {
             BroadcastError::Connection { .. } => true,
@@ -65,6 +63,7 @@ impl BroadcastError {
         }
     }
 
+    #[must_use]
     pub fn recovery_suggestions(&self) -> Vec<&'static str> {
         match self {
             BroadcastError::Connection { .. } => vec![
@@ -88,18 +87,13 @@ impl BroadcastError {
 
     /// Helper constructor for connection errors.
     pub fn connection_failed(reason: impl Into<String>) -> Self {
-        BroadcastError::Connection {
-            reason: reason.into(),
-        }
+        BroadcastError::Connection { reason: reason.into() }
     }
 
     /// Helper constructor for Windows API errors.
     #[cfg(windows)]
     pub fn windows_api_error(operation: impl Into<String>, source: core::Error) -> Self {
-        BroadcastError::WindowsApi {
-            operation: operation.into(),
-            source,
-        }
+        BroadcastError::WindowsApi { operation: operation.into(), source }
     }
 
     /// Helper constructor for unsupported platform errors.

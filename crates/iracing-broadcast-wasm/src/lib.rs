@@ -6,5 +6,7 @@
 
 #![allow(dead_code)]
 
+use iracing_broadcast as _;
+
 /// Marker type used while the WASM API surface is being designed.
 pub struct WasmBindings;

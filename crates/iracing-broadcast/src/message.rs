@@ -179,15 +179,16 @@ pub enum PitCommandMode {
 
 impl PitCommandMode {
     /// Encode into (var1, var2) words as expected by the broadcast API.
+    #[must_use]
     pub fn encode(self) -> (u16, u16) {
         match self {
             PitCommandMode::Clear => (0, 0),
             PitCommandMode::Tearoff => (1, 0),
-            PitCommandMode::Fuel(level) => (2, level as u16),
-            PitCommandMode::LF(pressure) => (3, pressure as u16),
-            PitCommandMode::RF(pressure) => (4, pressure as u16),
-            PitCommandMode::LR(pressure) => (5, pressure as u16),
-            PitCommandMode::RR(pressure) => (6, pressure as u16),
+            PitCommandMode::Fuel(level) => (2, u16::from(level)),
+            PitCommandMode::LF(pressure) => (3, u16::from(pressure)),
+            PitCommandMode::RF(pressure) => (4, u16::from(pressure)),
+            PitCommandMode::LR(pressure) => (5, u16::from(pressure)),
+            PitCommandMode::RR(pressure) => (6, u16::from(pressure)),
             PitCommandMode::ClearTires => (7, 0),
             PitCommandMode::FastRepair => (8, 0),
             PitCommandMode::ClearTearoff => (9, 0),
