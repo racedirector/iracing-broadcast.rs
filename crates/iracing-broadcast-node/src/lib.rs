@@ -5,5 +5,7 @@
 
 #![allow(dead_code)]
 
+use iracing_broadcast as _;
+
 /// Marker type used while the Node.js API surface is being designed.
 pub struct NodeBindings;

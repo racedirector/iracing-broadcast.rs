@@ -10,3 +10,6 @@ publish = false
 
 [dependencies]
 iracing-broadcast = { path = "../iracing-broadcast" }
+
+[lints]
+workspace = true
