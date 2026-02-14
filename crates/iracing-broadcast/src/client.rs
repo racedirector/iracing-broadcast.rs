@@ -20,10 +20,7 @@ const BROADCAST_MESSAGE_NAME: &str = r"IRSDK_BROADCASTMSG";
 fn wide_string(s: &str) -> Vec<u16> {
     use std::ffi::OsStr;
     use std::os::windows::ffi::OsStrExt;
-    OsStr::new(s)
-        .encode_wide()
-        .chain(std::iter::once(0))
-        .collect()
+    OsStr::new(s).encode_wide().chain(std::iter::once(0)).collect()
 }
 
 pub trait BroadcastMessageProvider {
@@ -90,28 +87,19 @@ impl BroadcastMessageProvider for BroadcastMessage {
             ),
             BroadcastMessage::CameraSwitchNumber(car_number, group, camera) => (
                 BroadcastMessageType::CameraSwitchNumber,
-                pad_car_number(&car_number),
+                pad_car_number(car_number),
                 group.into(),
                 camera.into(),
             ),
-            BroadcastMessage::CameraSetState(camera_state) => (
-                BroadcastMessageType::CameraSetState,
-                camera_state.bits() as u16,
-                0,
-                0,
-            ),
-            BroadcastMessage::ReplaySetPlaySpeed(speed, slow_motion) => (
-                BroadcastMessageType::ReplaySetPlaySpeed,
-                speed.into(),
-                slow_motion.into(),
-                0,
-            ),
-            BroadcastMessage::ReplaySetPlayPosition(mode, frame_number) => (
-                BroadcastMessageType::ReplaySetPlayPosition,
-                mode.into(),
-                frame_number.into(),
-                0,
-            ),
+            BroadcastMessage::CameraSetState(camera_state) => {
+                (BroadcastMessageType::CameraSetState, camera_state.bits() as u16, 0, 0)
+            }
+            BroadcastMessage::ReplaySetPlaySpeed(speed, slow_motion) => {
+                (BroadcastMessageType::ReplaySetPlaySpeed, speed.into(), slow_motion.into(), 0)
+            }
+            BroadcastMessage::ReplaySetPlayPosition(mode, frame_number) => {
+                (BroadcastMessageType::ReplaySetPlayPosition, mode.into(), frame_number, 0)
+            }
             BroadcastMessage::ReplaySearch(mode) => {
                 (BroadcastMessageType::ReplaySearch, mode.into(), 0, 0)
             }
@@ -176,8 +164,7 @@ impl Client {
 
         if id == 0 {
             return Err(BroadcastError::connection_failed(format!(
-                "Failed to register broadcast window message '{}'",
-                BROADCAST_MESSAGE_NAME
+                "Failed to register broadcast window message '{BROADCAST_MESSAGE_NAME}'"
             )));
         }
 
@@ -189,7 +176,7 @@ impl Client {
         let (broadcast_type, var1, var2, var3) = message.to_message();
         // Pack the low/high words to match the Windows broadcast contract.
         let wparam_value = broadcast_type as usize | ((var1 as usize) << 16);
-        let lparam_value = var2 as isize | ((var3 as isize) << 16);
+        let lparam_value = i32::from(var2) | (i32::from(var3) << 16);
 
         unsafe {
             // Safety: iRacing expects these messages to be delivered to
@@ -200,7 +187,7 @@ impl Client {
                 HWND_BROADCAST,
                 self.message_id,
                 WPARAM(wparam_value),
-                LPARAM(lparam_value),
+                LPARAM(lparam_value as isize),
             )
             .map_err(|e| BroadcastError::windows_api_error("SendNotifyMessageW", e))
         }
@@ -219,17 +206,11 @@ impl Client {
     ///
     /// This always returns an error as message events can only be sent on windows.
     pub fn new() -> Result<Self> {
-        Err(BroadcastError::unsupported_platform(
-            "Broadcast Client",
-            "Windows",
-        ))
+        Err(BroadcastError::unsupported_platform("Broadcast Client", "Windows"))
     }
 
     pub fn send_message<M: BroadcastMessageProvider>(&self, _message: M) -> Result<()> {
-        Err(BroadcastError::unsupported_platform(
-            "Broadcast Client Send Message",
-            "Windows",
-        ))
+        Err(BroadcastError::unsupported_platform("Broadcast Client Send Message", "Windows"))
     }
 }
 
