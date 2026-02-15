@@ -24,3 +24,11 @@ jobs:
       - run: cargo clippy --workspace --all-targets --all-features -- -D warnings
       - run: cargo build --workspace --all-targets --all-features --verbose
       - run: cargo test --workspace --all-targets --all-features --verbose
+
+  wasm_checks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - run: rustup target add wasm32-unknown-unknown
+      - run: cargo check -p iracing-broadcast --target wasm32-unknown-unknown
+      - run: cargo check -p iracing-broadcast-wasm --target wasm32-unknown-unknown
