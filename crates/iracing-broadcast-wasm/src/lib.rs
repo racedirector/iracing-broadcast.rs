@@ -4,7 +4,7 @@
 //! JavaScript-friendly shape. Sending messages to iRacing still requires a
 //! native host runtime.
 
-use iracing_broadcast::PitCommandMode;
+use iracing_broadcast::{BroadcastMessageType, PitCommandMode};
 use wasm_bindgen::prelude::*;
 
 /// JS-facing representation of a packed iRacing broadcast message.
@@ -22,7 +22,7 @@ impl EncodedBroadcastMessage {
     fn pit_command(mode: PitCommandMode) -> Self {
         let (var1, var2) = mode.encode();
 
-        Self { message_type: 9, var1, var2, var3: 0 }
+        Self { message_type: BroadcastMessageType::PitCommand as u32, var1, var2, var3: 0 }
     }
 }
 
@@ -64,16 +64,31 @@ impl EncodedBroadcastMessage {
     }
 }
 
+/// Supported pit commands for the WASM interface.
+#[wasm_bindgen]
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
+pub enum WasmPitCommand {
+    Clear,
+    Tearoff,
+    Fuel,
+    LF,
+    RF,
+    LR,
+    RR,
+    ClearTires,
+    FastRepair,
+    ClearTearoff,
+    ClearFastRepair,
+    ClearFuel,
+}
+
 /// Build a packed pit-command payload.
 ///
-/// `command` accepts one of:
-/// `clear`, `tearoff`, `fuel`, `lf`, `rf`, `lr`, `rr`, `clear_tires`,
-/// `fast_repair`, `clear_tearoff`, `clear_fast_repair`, or `clear_fuel`.
-///
-/// Commands `fuel`, `lf`, `rf`, `lr`, and `rr` require `value`.
+/// `value` is required for [`WasmPitCommand::Fuel`], [`WasmPitCommand::LF`],
+/// [`WasmPitCommand::RF`], [`WasmPitCommand::LR`], and [`WasmPitCommand::RR`].
 #[wasm_bindgen]
 pub fn build_pit_command(
-    command: &str,
+    command: WasmPitCommand,
     value: Option<u8>,
 ) -> Result<EncodedBroadcastMessage, JsError> {
     let mode = parse_pit_command_mode(command, value).map_err(JsError::new)?;
@@ -81,25 +96,32 @@ pub fn build_pit_command(
 }
 
 fn parse_pit_command_mode(
-    command: &str,
+    command: WasmPitCommand,
     value: Option<u8>,
 ) -> Result<PitCommandMode, &'static str> {
     match command {
-        "clear" => Ok(PitCommandMode::Clear),
-        "tearoff" => Ok(PitCommandMode::Tearoff),
-        "fuel" => {
-            value.map(PitCommandMode::Fuel).ok_or("Pit command 'fuel' requires a numeric value.")
+        WasmPitCommand::Clear => Ok(PitCommandMode::Clear),
+        WasmPitCommand::Tearoff => Ok(PitCommandMode::Tearoff),
+        WasmPitCommand::Fuel => {
+            value.map(PitCommandMode::Fuel).ok_or("Pit command 'Fuel' requires a numeric value.")
         }
-        "lf" => value.map(PitCommandMode::LF).ok_or("Pit command 'lf' requires a numeric value."),
-        "rf" => value.map(PitCommandMode::RF).ok_or("Pit command 'rf' requires a numeric value."),
-        "lr" => value.map(PitCommandMode::LR).ok_or("Pit command 'lr' requires a numeric value."),
-        "rr" => value.map(PitCommandMode::RR).ok_or("Pit command 'rr' requires a numeric value."),
-        "clear_tires" => Ok(PitCommandMode::ClearTires),
-        "fast_repair" => Ok(PitCommandMode::FastRepair),
-        "clear_tearoff" => Ok(PitCommandMode::ClearTearoff),
-        "clear_fast_repair" => Ok(PitCommandMode::ClearFastRepair),
-        "clear_fuel" => Ok(PitCommandMode::ClearFuel),
-        _ => Err("Unsupported pit command. See build_pit_command docs for supported values."),
+        WasmPitCommand::LF => {
+            value.map(PitCommandMode::LF).ok_or("Pit command 'LF' requires a numeric value.")
+        }
+        WasmPitCommand::RF => {
+            value.map(PitCommandMode::RF).ok_or("Pit command 'RF' requires a numeric value.")
+        }
+        WasmPitCommand::LR => {
+            value.map(PitCommandMode::LR).ok_or("Pit command 'LR' requires a numeric value.")
+        }
+        WasmPitCommand::RR => {
+            value.map(PitCommandMode::RR).ok_or("Pit command 'RR' requires a numeric value.")
+        }
+        WasmPitCommand::ClearTires => Ok(PitCommandMode::ClearTires),
+        WasmPitCommand::FastRepair => Ok(PitCommandMode::FastRepair),
+        WasmPitCommand::ClearTearoff => Ok(PitCommandMode::ClearTearoff),
+        WasmPitCommand::ClearFastRepair => Ok(PitCommandMode::ClearFastRepair),
+        WasmPitCommand::ClearFuel => Ok(PitCommandMode::ClearFuel),
     }
 }
 
@@ -109,9 +131,10 @@ mod tests {
 
     #[test]
     fn builds_pit_command_payload() {
-        let payload = build_pit_command("fuel", Some(12)).expect("payload should encode");
+        let payload =
+            build_pit_command(WasmPitCommand::Fuel, Some(12)).expect("payload should encode");
 
-        assert_eq!(payload.message_type(), 9);
+        assert_eq!(payload.message_type(), BroadcastMessageType::PitCommand as u32);
         assert_eq!(payload.var1(), 2);
         assert_eq!(payload.var2(), 12);
         assert_eq!(payload.var3(), 0);
@@ -119,7 +142,7 @@ mod tests {
 
     #[test]
     fn rejects_missing_command_value() {
-        let Err(error) = parse_pit_command_mode("fuel", None) else {
+        let Err(error) = parse_pit_command_mode(WasmPitCommand::Fuel, None) else {
             panic!("value is required for fuel");
         };
 
