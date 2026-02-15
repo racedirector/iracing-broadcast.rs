@@ -1,0 +1,5 @@
+{
+  "name": "@iracing-broadcast/wasm-harness",
+  "private": true,
+  "type": "module"
+}
