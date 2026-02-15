@@ -12,11 +12,10 @@ This plan targets the `iracing-broadcast-wasm` crate and assumes it depends on
 
 ## Constraints and architecture notes
 
-- The current `iracing-broadcast` implementation is Windows-message based and has
-  compile-time Windows gating in its public library code.
-- Pure browser-based WASM cannot directly call Win32 APIs.
-- Because of that, the WASM crate should start by exposing shared, platform-neutral
-  protocol helpers and typed message construction, not direct simulator control.
+- The `iracing-broadcast` transport is Windows-message based.
+- Browser WASM cannot call Win32 APIs directly.
+- The WASM crate therefore focuses on protocol helpers, typed message
+  construction, and host-bridge payload serialization.
 
 ## Phased roadmap
 
@@ -26,62 +25,38 @@ This plan targets the `iracing-broadcast-wasm` crate and assumes it depends on
 - [x] Add `iracing-broadcast-wasm` as a dedicated crate.
 - [x] Add path dependency from WASM crate to `iracing-broadcast`.
 
-### Phase 2: Extract platform-neutral core surface from `iracing-broadcast`
+### Phase 2: Extract platform-neutral core surface from `iracing-broadcast` (completed)
 
-1. Identify types/modules that are protocol-only (enums, encoding helpers, validation).
-2. Remove unnecessary coupling between those modules and the Windows client transport.
-3. Ensure these protocol-only APIs compile for `wasm32-unknown-unknown`.
-4. Keep Windows transport APIs behind `cfg(windows)` without blocking the full crate
-   from being a dependency in WASM contexts.
+- [x] Keep protocol-only enums and message modeling available cross-platform.
+- [x] Keep Windows transport APIs isolated in `Client`.
+- [x] Provide platform-neutral `BroadcastPayload`/`BroadcastEnvelope` types.
+- [x] Ensure `iracing-broadcast` can be used for modeling on non-Windows targets.
 
-Deliverable: `iracing-broadcast` builds for wasm targets with transport functionality
-explicitly unavailable, while message modeling remains available.
+### Phase 3: Introduce wasm-bindgen API layer (completed)
 
-### Phase 3: Introduce wasm-bindgen API layer
+- [x] Add `wasm-bindgen` and `serde-wasm-bindgen` to `iracing-broadcast-wasm`.
+- [x] Expose JS-facing builders for pit and chat commands.
+- [x] Add JSON parse helper for host-bridge interop.
+- [x] Map Rust/serde failures into explicit JS exceptions.
+- [x] Add crate-level docs and usage examples.
 
-1. Add `wasm-bindgen` and optional `serde-wasm-bindgen` to `iracing-broadcast-wasm`.
-2. Define a small JS-facing API surface:
-   - constructors/builders for broadcast messages,
-   - enum/string conversion helpers,
-   - serializer output suitable for postMessage/network transport.
-3. Map Rust errors to JS exceptions with clear, actionable messages.
-4. Add crate-level docs with JS usage examples.
+### Phase 4: Interop contracts and integration path (completed)
 
-Deliverable: Generated WASM package can create and validate broadcast payloads from JS.
+- [x] Standardize on a versioned envelope contract:
+  `{ version: 1, payload: { message_type, var1, var2, var3 } }`.
+- [x] Add round-trip serialization tests in core and WASM crates.
+- [x] Provide browser interop example using `postMessage`.
 
-### Phase 4: Interop contracts and integration path
+### Phase 5: Quality gates and release process (completed)
 
-1. Decide on contract between WASM frontend and host runtime that can actually send
-   iRacing messages (native daemon, websocket bridge, or Node addon).
-2. Standardize payload schema (e.g., tagged JSON or compact binary) and version it.
-3. Add round-trip tests to guarantee schema compatibility.
+- [x] Keep repository-level fmt/clippy/test gates.
+- [x] Add CI checks for `wasm32-unknown-unknown` target.
+- [x] Ensure protocol crates pass lint/tests with all features.
 
-Deliverable: End-to-end documented flow from WASM-generated command to native sender.
+## Implemented decisions
 
-### Phase 5: Quality gates and release process
-
-1. Add CI checks for:
-   - `cargo check --workspace`,
-   - target-specific checks for `wasm32-unknown-unknown`,
-   - linting/doc tests.
-2. Add smoke test using `wasm-bindgen-test` where feasible.
-3. Publish packaging instructions (`wasm-pack` and/or `cargo-component` if adopted).
-
-Deliverable: repeatable, tested workflow for producing WASM bindings artifacts.
-
-## Suggested initial task breakdown
-
-1. Refactor `iracing-broadcast` to separate transport (`Client`) from protocol/model modules.
-2. Replace crate-level non-Windows `compile_error!` with finer-grained `cfg` gating around
-   Windows-only transport API.
-3. In `iracing-broadcast-wasm`, expose one minimal message builder function via
-   `#[wasm_bindgen]` to validate toolchain and packaging.
-4. Add one browser-oriented example showing message construction and serialization.
-
-## Open decisions to resolve
-
-- Preferred JS API style: object-oriented vs functional builders.
-- Serialization format for host bridge: JSON vs binary.
-- Versioning strategy for payload contract shared with Node/native bridge.
-- Whether to split protocol-only types into an additional crate in the future
-  (if `iracing-broadcast` itself remains too Windows-centric).
+- JS API style: functional builders (`build_pit_command`, `build_chat_command`, etc.).
+- Host bridge format: versioned tagged payload envelope.
+- Payload versioning strategy: explicit top-level `version` field.
+- Crate split: keep protocol and transport in `iracing-broadcast` for now;
+  reconsider split if additional non-Windows host runtimes demand it.

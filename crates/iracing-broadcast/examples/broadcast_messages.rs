@@ -18,9 +18,9 @@ pub fn main() {
 
 fn demo_camera_messages(broadcast: &Client) {
     let _ = broadcast.send_message(BroadcastMessage::CameraSwitchPosition(0, 0, 0));
-    let _ = broadcast.send_message(BroadcastMessage::CameraSwitchNumber("064", 1, 1));
+    let _ = broadcast.send_message(BroadcastMessage::CameraSwitchNumber("064".to_string(), 1, 1));
     let scenic_camera = CameraState::IS_SCENIC_ACTIVE | CameraState::UI_HIDDEN;
-    let _ = broadcast.send_message(BroadcastMessage::CameraSetState(scenic_camera));
+    let _ = broadcast.send_message(BroadcastMessage::CameraSetState(scenic_camera.bits()));
 }
 
 fn demo_replay_messages(broadcast: &Client) {

@@ -1,7 +1,12 @@
 use bitflags::bitflags;
+use serde::{Deserialize, Serialize};
+
+use crate::util::pad_car_number;
 
 /// Identifiers for broadcast messages recognized by the iRacing simulator.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[repr(u32)]
+#[serde(rename_all = "camelCase")]
 pub enum BroadcastMessageType {
     /// Switch to a camera by position index.
     CameraSwitchPosition = 0,
@@ -50,7 +55,7 @@ bitflags! {
     ///
     /// let very_scenic = CameraState::UI_HIDDEN | CameraState::IS_SCENIC_ACTIVE;
     /// ```
-    #[derive(Default)]
+    #[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
     pub struct CameraState: u32 {
         const IS_SESSION_SCREEN = 0x01;
         const IS_SCENIC_ACTIVE = 0x02;
@@ -66,7 +71,9 @@ bitflags! {
 }
 
 /// Replay positioning behaviors when jumping within a session recording.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[repr(u16)]
+#[serde(rename_all = "camelCase")]
 pub enum ReplayPositionMode {
     /// Seek to the start of the session.
     Begin = 0,
@@ -83,7 +90,9 @@ impl From<ReplayPositionMode> for u16 {
 }
 
 /// High-level search controls for walking replay timelines.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[repr(u16)]
+#[serde(rename_all = "camelCase")]
 pub enum ReplaySearchMode {
     /// Jump to the beginning of the session.
     ToStart = 0,
@@ -114,7 +123,9 @@ impl From<ReplaySearchMode> for u16 {
 }
 
 /// Control commands for telemetry recording.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[repr(u16)]
+#[serde(rename_all = "camelCase")]
 pub enum TelemetryCommandMode {
     /// Stop capturing telemetry data.
     Stop = 0,
@@ -131,7 +142,9 @@ impl From<TelemetryCommandMode> for u16 {
 }
 
 /// Chat command options exposed by the broadcast protocol.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[repr(u16)]
+#[serde(rename_all = "camelCase")]
 pub enum ChatCommandMode {
     /// Send a numbered chat macro.
     Macro = 0,
@@ -150,6 +163,8 @@ impl From<ChatCommandMode> for u16 {
 }
 
 /// Commands that adjust pit service behavior for the player's car.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub enum PitCommandMode {
     /// Clear all pending pit service requests.
     Clear,
@@ -199,7 +214,9 @@ impl PitCommandMode {
 }
 
 /// Control video capture and screenshot functionality.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[repr(u16)]
+#[serde(rename_all = "camelCase")]
 pub enum VideoCaptureMode {
     /// Trigger a single screenshot.
     ScreenShot = 0,
@@ -218,5 +235,193 @@ pub enum VideoCaptureMode {
 impl From<VideoCaptureMode> for u16 {
     fn from(mode: VideoCaptureMode) -> Self {
         mode as u16
+    }
+}
+
+pub trait BroadcastMessageProvider {
+    fn to_payload(self) -> BroadcastPayload;
+
+    fn to_message(self) -> (BroadcastMessageType, u16, u16, u16)
+    where
+        Self: Sized,
+    {
+        let payload = self.to_payload();
+        (payload.message_type, payload.var1, payload.var2, payload.var3)
+    }
+}
+
+/// A platform-neutral representation of one iRacing broadcast packet.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct BroadcastPayload {
+    pub message_type: BroadcastMessageType,
+    pub var1: u16,
+    pub var2: u16,
+    pub var3: u16,
+}
+
+/// Versioned envelope used when exchanging payloads over JS bridges.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct BroadcastEnvelope {
+    pub version: u8,
+    pub payload: BroadcastPayload,
+}
+
+impl BroadcastEnvelope {
+    #[must_use]
+    pub fn new(payload: BroadcastPayload) -> Self {
+        Self { version: 1, payload }
+    }
+}
+
+/// Messages that can be sent to the iRacing simulation.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub enum BroadcastMessage {
+    CameraSwitchPosition(u8, u8, u8),
+    CameraSwitchNumber(String, u8, u8),
+    CameraSetState(u32),
+    ReplaySetPlaySpeed(u8, bool),
+    ReplaySetPlayPosition(ReplayPositionMode, u16),
+    ReplaySearch(ReplaySearchMode),
+    ReplaySetState,
+    ReloadAllTextures,
+    ReloadTextures(u8),
+    ChatCommand(ChatCommandMode),
+    ChatCommandMacro(u8),
+    PitCommand(PitCommandMode),
+    TelemetryCommand(TelemetryCommandMode),
+    FFBCommand(u16),
+    ReplaySearchSessionTime(u8, u16),
+    VideoCapture(VideoCaptureMode),
+}
+
+impl BroadcastMessageProvider for BroadcastMessage {
+    #[allow(clippy::too_many_lines)]
+    fn to_payload(self) -> BroadcastPayload {
+        match self {
+            BroadcastMessage::CameraSwitchPosition(position, group, camera) => BroadcastPayload {
+                message_type: BroadcastMessageType::CameraSwitchPosition,
+                var1: position.into(),
+                var2: group.into(),
+                var3: camera.into(),
+            },
+            BroadcastMessage::CameraSwitchNumber(car_number, group, camera) => BroadcastPayload {
+                message_type: BroadcastMessageType::CameraSwitchNumber,
+                var1: pad_car_number(&car_number),
+                var2: group.into(),
+                var3: camera.into(),
+            },
+            BroadcastMessage::CameraSetState(camera_state_bits) => BroadcastPayload {
+                message_type: BroadcastMessageType::CameraSetState,
+                var1: camera_state_bits as u16,
+                var2: 0,
+                var3: 0,
+            },
+            BroadcastMessage::ReplaySetPlaySpeed(speed, slow_motion) => BroadcastPayload {
+                message_type: BroadcastMessageType::ReplaySetPlaySpeed,
+                var1: speed.into(),
+                var2: slow_motion.into(),
+                var3: 0,
+            },
+            BroadcastMessage::ReplaySetPlayPosition(mode, frame_number) => BroadcastPayload {
+                message_type: BroadcastMessageType::ReplaySetPlayPosition,
+                var1: mode.into(),
+                var2: frame_number,
+                var3: 0,
+            },
+            BroadcastMessage::ReplaySearch(mode) => BroadcastPayload {
+                message_type: BroadcastMessageType::ReplaySearch,
+                var1: mode.into(),
+                var2: 0,
+                var3: 0,
+            },
+            BroadcastMessage::ReplaySetState => BroadcastPayload {
+                message_type: BroadcastMessageType::ReplaySetState,
+                var1: 0,
+                var2: 0,
+                var3: 0,
+            },
+            BroadcastMessage::ReloadAllTextures => BroadcastPayload {
+                message_type: BroadcastMessageType::ReloadTextures,
+                var1: 0,
+                var2: 0,
+                var3: 0,
+            },
+            BroadcastMessage::ReloadTextures(car_index) => BroadcastPayload {
+                message_type: BroadcastMessageType::ReloadTextures,
+                var1: car_index.into(),
+                var2: 0,
+                var3: 0,
+            },
+            BroadcastMessage::ChatCommand(mode) => BroadcastPayload {
+                message_type: BroadcastMessageType::ChatCommand,
+                var1: mode.into(),
+                var2: 0,
+                var3: 0,
+            },
+            BroadcastMessage::ChatCommandMacro(macro_number) => BroadcastPayload {
+                message_type: BroadcastMessageType::ChatCommand,
+                var1: ChatCommandMode::Macro.into(),
+                var2: macro_number.into(),
+                var3: 0,
+            },
+            BroadcastMessage::PitCommand(pit_command_mode) => {
+                let (var1, var2) = pit_command_mode.encode();
+                BroadcastPayload {
+                    message_type: BroadcastMessageType::PitCommand,
+                    var1,
+                    var2,
+                    var3: 0,
+                }
+            }
+            BroadcastMessage::TelemetryCommand(mode) => BroadcastPayload {
+                message_type: BroadcastMessageType::TelemetryCommand,
+                var1: mode.into(),
+                var2: 0,
+                var3: 0,
+            },
+            BroadcastMessage::FFBCommand(_value) => BroadcastPayload {
+                message_type: BroadcastMessageType::FFBCommand,
+                var1: 0,
+                var2: 0,
+                var3: 0,
+            },
+            BroadcastMessage::ReplaySearchSessionTime(session_number, session_time_ms) => {
+                BroadcastPayload {
+                    message_type: BroadcastMessageType::ReplaySearchSessionTime,
+                    var1: session_number.into(),
+                    var2: session_time_ms,
+                    var3: 0,
+                }
+            }
+            BroadcastMessage::VideoCapture(mode) => BroadcastPayload {
+                message_type: BroadcastMessageType::VideoCapture,
+                var1: mode.into(),
+                var2: 0,
+                var3: 0,
+            },
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn camera_switch_number_encodes_leading_zeros() {
+        let payload = BroadcastMessage::CameraSwitchNumber("001".to_string(), 0, 0).to_payload();
+        assert_eq!(payload.var1, 3001);
+    }
+
+    #[test]
+    fn envelope_round_trip_json() {
+        let envelope = BroadcastEnvelope::new(
+            BroadcastMessage::PitCommand(PitCommandMode::Fuel(12)).to_payload(),
+        );
+        let encoded = serde_json::to_string(&envelope).expect("serialize envelope");
+        let decoded: BroadcastEnvelope =
+            serde_json::from_str(&encoded).expect("deserialize envelope");
+        assert_eq!(decoded, envelope);
     }
 }
