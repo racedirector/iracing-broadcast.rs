@@ -1,0 +1,8 @@
+{
+  "name": "@examples/iracing-broadcast-wasm-js",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node --test test/integration.test.mjs"
+  }
+}
