@@ -3,7 +3,12 @@ import path from 'node:path';
 
 const WASM_CRATE_LIB = path.resolve(process.cwd(), '..', 'crates', 'iracing-broadcast-wasm', 'src', 'lib.rs');
 
-export async function validateWasmCrateScaffold() {
+export type WasmScaffoldValidation = {
+  hasMarkerType: boolean;
+  hasScaffoldDocs: boolean;
+};
+
+export async function validateWasmCrateScaffold(): Promise<WasmScaffoldValidation> {
   const source = await readFile(WASM_CRATE_LIB, 'utf8');
 
   return {

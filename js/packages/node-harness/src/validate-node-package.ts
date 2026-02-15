@@ -3,7 +3,12 @@ import path from 'node:path';
 
 const NODE_CRATE_LIB = path.resolve(process.cwd(), '..', 'crates', 'iracing-broadcast-node', 'src', 'lib.rs');
 
-export async function validateNodeCrateScaffold() {
+export type NodeScaffoldValidation = {
+  hasMarkerType: boolean;
+  hasScaffoldDocs: boolean;
+};
+
+export async function validateNodeCrateScaffold(): Promise<NodeScaffoldValidation> {
   const source = await readFile(NODE_CRATE_LIB, 'utf8');
 
   return {
