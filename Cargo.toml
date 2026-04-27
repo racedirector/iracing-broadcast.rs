@@ -13,7 +13,7 @@ license = "MIT"
 edition = "2024"
 
 [workspace.dependencies]
-bitflags = "2.10"
+bitflags = "2.11"
 thiserror = "2"
 windows = { version = "0.62.2", features = ["Win32_UI_WindowsAndMessaging"] }
 windows-core = "0.62.2"
